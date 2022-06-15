@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FulaProvider } from '@functionland/fula-client-react'
+import { FulaProvider, useLazyQuery, useSubscription } from '@functionland/fula-client-react'
 import { createClient, Fula, Status } from '@functionland/fula'
+import * as graphql from 'graphql';
+import DownloadForm, { DownloadRequest } from './components/DownloadForm';
+import Queue from './components/Queue';
 
 function App() {
   const inputRef = useRef<any>(null);
@@ -9,6 +12,22 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [serverIdsInput, setServerIdsInput] = useState("");
   const [connecting, setConnecting] = useState(false);
+
+  const createJobGQL = graphql.parse(`
+  mutation addTodo($values:JSON){
+    create(input:{
+      collection:"download",
+      values: $values
+    }){
+      id
+      title
+      url
+      dirs
+    }
+  }
+`);
+
+  const [createJobMutation, {data: createdJob}] = useLazyQuery(createJobGQL)
 
   useEffect(() => {
     const startFula = async () => {
@@ -60,9 +79,14 @@ function App() {
     }
   };
 
+  const submit = (req: DownloadRequest) => {
+    createJobMutation({variables: {values: [{...req, id: Math.random()*100}]}})
+  }
+
   return (
     <div className="App">
       <FulaProvider fula={fulaClient}>
+        <>
         {connected ? <div>CONNECTED</div> : <div className='connect-container'>
           <div className='app-header'>
             {!connecting ? <h1>Connect to BOX!</h1> : null}
@@ -81,6 +105,10 @@ function App() {
           </button>
 
         </div>}
+        {
+          connected ? <div><DownloadForm submit={submit} /><Queue /></div> : null
+        }
+        </>
       </FulaProvider>
     </div>
   );
