@@ -1,29 +1,37 @@
-import { useSubscription } from '@functionland/fula-client-react'
-import React, { useEffect } from 'react'
-import * as graphql from 'graphql'
+// import { useLazyQuery, useSubscription } from '@functionland/fula-client-react'
+import {Fula} from '@functionland/fula'
+import React, { useContext, useEffect, useState } from 'react'
 import { DownloadRequest } from './DownloadForm';
+import { readQuery } from '../queries';
+import { FulaContext } from '@functionland/fula-client-react';
 
-const readQuery = graphql.parse(`
-  query {
-    read(input:{
-      collection:"download",
-      filter:{}
-    }){
-        id
-        title
-        url
-        dirs
-    }
-  } 
-`);
+// type Props = {
+//   queue: Array<DownloadRequest>
+// }
 
 const Queue = () => {
-    const [queue] = useSubscription(readQuery)
-    
+
+  // const [readQueue] = useLazyQuery(readQuery)
+  const fulaClient = useContext(FulaContext)
+  const [queue, setQueue] = useState<Array<DownloadRequest>>()
+
+  const get = () => {
+    const _readQueue = async () => {
+      const queue = await fulaClient?.graphql(readQuery)
+      setQueue(queue as  Array<DownloadRequest>)
+    }
+
+    _readQueue()
+  }
+
+  useEffect(() => {
+    console.log({queue})
+  }, [queue])
     
   return (
     <div>Queue
-        {queue && <div>{queue.map((job: DownloadRequest) => <div key={job.id}>{`${job.title} -- ${job.url}`}</div>)}</div>}
+        {/* {queue && queue.read && <div>{queue.read.map((job: DownloadRequest) => <div key={job.id}>{`${job.title} -- ${job.url}`}</div>)}</div>} */}
+        <button onClick={get}>GET</button>
     </div>
   )
 }
